@@ -17,17 +17,97 @@
     .card {
       background: rgba(255,255,255,0.08);
       border-radius: 24px;
-      padding: 48px 40px;
+      padding: 48px 32px;
       text-align: center;
       width: 90%;
       max-width: 360px;
+      border: 1px solid rgba(255,255,255,0.1);
     }
-    .emoji { font-size: 56px; margin-bottom: 16px; }
-    h1 { color: #fff; font-size: 26px; font-weight: 700; margin-bottom: 8px; }
-    p { color: rgba(255,255,255,0.55); font-size: 14px; margin-bottom: 32px; }
-    #tg-widget { display: flex; justify-content: center; margin-bottom: 16px; }
-    #msg { font-size: 13px; color: rgba(255,255,255,0.4); min-height: 20px; }
+    .emoji { font-size: 52px; margin-bottom: 12px; display: block; }
+    h1 { color: #fff; font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+    .sub { color: rgba(255,255,255,0.5); font-size: 13px; margin-bottom: 36px; }
+    #widget-wrap { 
+      display: flex; 
+      justify-content: center; 
+      min-height: 48px;
+      margin-bottom: 16px;
+      align-items: center;
+    }
+    #loading {
+      color: rgba(255,255,255,0.4);
+      font-size: 13px;
+    }
+    #msg { 
+      font-size: 13px; 
+      color: rgba(255,255,255,0.4); 
+      min-height: 18px;
+      margin-top: 8px;
+    }
+    .success { color: #4ade80 !important; }
   </style>
 </head>
 <body>
   <div class="card">
+    <span class="emoji">🎬</span>
+    <h1>KhmerDrama</h1>
+    <p class="sub">Login with Telegram to continue</p>
+
+    <div id="widget-wrap">
+      <span id="loading">Loading...</span>
+    </div>
+    <div id="msg"></div>
+  </div>
+
+  <script>
+    // 先定义回调函数
+    function onTelegramAuth(user) {
+      document.getElementById('msg').textContent = '✓ Verified! Returning to app...';
+      document.getElementById('msg').className = 'success';
+
+      const p = new URLSearchParams({
+        id:         String(user.id),
+        first_name: user.first_name  || '',
+        last_name:  user.last_name   || '',
+        username:   user.username    || '',
+        photo_url:  user.photo_url   || '',
+        auth_date:  String(user.auth_date),
+        hash:       user.hash
+      });
+
+      setTimeout(() => {
+        window.location.href = 'khmerdrama://auth?' + p.toString();
+      }, 800);
+    }
+
+    // 动态加载 Telegram Widget
+    function loadTelegramWidget() {
+      document.getElementById('loading').textContent = '';
+
+      const script = document.createElement('script');
+      script.src = 'https://telegram.org/js/telegram-widget.js?22';
+      script.setAttribute('data-telegram-login', 'khmerdrama_auth_bot');
+      script.setAttribute('data-size', 'large');
+      script.setAttribute('data-radius', '8');
+      script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+      script.setAttribute('data-request-access', 'write');
+      script.async = false; // 同步加载，确保显示
+
+      script.onload = function() {
+        document.getElementById('loading').textContent = '';
+      };
+      script.onerror = function() {
+        document.getElementById('loading').textContent = '⚠️ Failed to load. Check connection.';
+      };
+
+      document.getElementById('widget-wrap').appendChild(script);
+    }
+
+    // 页面加载完成后执行
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', loadTelegramWidget);
+    } else {
+      loadTelegramWidget();
+    }
+  </script>
+</body>
+</html>
