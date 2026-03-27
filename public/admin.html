@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TosMer Admin — Push Notifications</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080810;
+    --surface: #0f0f1a;
+    --surface2: #16162a;
+    --border: #ffffff0f;
+    --accent: #FF6B6B;
+    --accent2: #FFD700;
+    --text: #f0f0f0;
+    --muted: #777;
+    --success: #4ade80;
+    --error: #f87171;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* Login Screen */
+  #loginScreen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: radial-gradient(ellipse at 50% 0%, #FF6B6B18 0%, transparent 60%);
+  }
+
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 48px 40px;
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+  }
+
+  .login-logo {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+  }
+
+  .login-sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 36px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .login-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    color: var(--text);
+    font-size: 15px;
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .login-input:focus { border-color: var(--accent); }
+
+  .btn-primary {
+    width: 100%;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Syne', sans-serif;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    letter-spacing: 0.5px;
+  }
+
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Main Layout */
+  #mainApp { display: none; min-height: 100vh; }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 32px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .topbar-brand { font-size: 20px; font-weight: 800; color: var(--accent); letter-spacing: -0.5px; }
+  .topbar-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    background: var(--accent);
+    color: white;
+    padding: 3px 8px;
+    border-radius: 20px;
+    margin-left: 10px;
+    vertical-align: middle;
+  }
+
+  .topbar-logout {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+  .topbar-logout:hover { border-color: var(--accent); color: var(--accent); }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 36px 32px;
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 28px;
+    align-items: start;
+  }
+
+  @media (max-width: 860px) {
+    .container { grid-template-columns: 1fr; }
+  }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+  }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 24px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* Form Elements */
+  .form-group { margin-bottom: 20px; }
+
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  input[type="text"], textarea, select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: 'Syne', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: vertical;
+  }
+
+  input[type="text"]:focus,
+  textarea:focus,
+  select:focus { border-color: var(--accent); }
+
+  textarea { min-height: 80px; }
+
+  select option { background: var(--surface2); }
+
+  /* Type Pills */
+  .type-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .type-pill {
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--muted);
+    font-size: 13px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .type-pill.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  /* Audience Toggle */
+  .audience-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .audience-btn {
+    padding: 12px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+
+  .audience-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: #FF6B6B12;
+  }
+
+  /* Preview */
+  .preview-box {
+    background: #1a1a2e;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 20px;
+    border: 1px solid #ffffff08;
+  }
+
+  .preview-notif {
+    background: #252540;
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .preview-icon {
+    width: 36px;
+    height: 36px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .preview-content { flex: 1; min-width: 0; }
+  .preview-app { font-size: 11px; color: var(--muted); margin-bottom: 2px; font-family: 'DM Mono', monospace; }
+  .preview-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  .preview-body { font-size: 12px; color: #aaa; line-height: 1.4; word-break: break-word; }
+
+  /* Send button */
+  .btn-send {
+    width: 100%;
+    background: linear-gradient(135deg, #FF6B6B, #ff4757);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    padding: 16px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Syne', sans-serif;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn-send:hover { opacity: 0.9; }
+  .btn-send:active { transform: scale(0.98); }
+  .btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 1000;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    max-width: 340px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { background: #052e16; border: 1px solid var(--success); color: var(--success); }
+  .toast.error { background: #2d0b0b; border: 1px solid var(--error); color: var(--error); }
+
+  /* History */
+  .history-list { display: flex; flex-direction: column; gap: 12px; }
+
+  .history-item {
+    background: var(--surface2);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    border-left: 3px solid var(--border);
+    transition: border-color 0.2s;
+  }
+
+  .history-item.success-item { border-left-color: var(--success); }
+  .history-item.error-item { border-left-color: var(--error); }
+
+  .history-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 6px;
+  }
+
+  .history-title { font-size: 14px; font-weight: 700; }
+  .history-time { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .history-body { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+
+  .history-meta { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .tag {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+
+  .tag.type-new_drama { color: #60a5fa; border-color: #60a5fa40; }
+  .tag.type-vip { color: var(--accent2); border-color: #FFD70040; }
+  .tag.type-checkin { color: var(--success); border-color: #4ade8040; }
+  .tag.type-general { color: var(--muted); }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+    font-size: 13px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .char-count {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+    margin-top: 4px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .char-count.warn { color: #fb923c; }
+  .char-count.over { color: var(--error); }
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">TosMer</div>
+    <div class="login-sub">admin / push notifications</div>
+    <input type="password" id="passwordInput" class="login-input" placeholder="Enter admin password" />
+    <button class="btn-primary" onclick="login()">Enter Dashboard</button>
+    <div id="loginError" style="color:var(--error);font-size:13px;margin-top:12px;display:none;">Wrong password</div>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="mainApp">
+  <div class="topbar">
+    <div>
+      <span class="topbar-brand">TosMer</span>
+      <span class="topbar-badge">ADMIN</span>
+    </div>
+    <button class="topbar-logout" onclick="logout()">Logout</button>
+  </div>
+
+  <div class="container">
+    <!-- Left: Compose -->
+    <div>
+      <div class="card">
+        <div class="card-title">Compose Notification</div>
+
+        <!-- Type -->
+        <div class="form-group">
+          <label>Type</label>
+          <div class="type-pills">
+            <button class="type-pill active" data-type="new_drama" onclick="selectType(this)">🎬 New Drama</button>
+            <button class="type-pill" data-type="vip" onclick="selectType(this)">👑 VIP</button>
+            <button class="type-pill" data-type="checkin" onclick="selectType(this)">📅 Check-in</button>
+            <button class="type-pill" data-type="general" onclick="selectType(this)">📣 General</button>
+          </div>
+        </div>
+
+        <!-- Title -->
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" id="notifTitle" placeholder="e.g. New drama just dropped! 🔥" maxlength="65" oninput="updatePreview(); updateCharCount(this, 'titleCount', 65)" />
+          <div class="char-count" id="titleCount">0 / 65</div>
+        </div>
+
+        <!-- Body -->
+        <div class="form-group">
+          <label>Message</label>
+          <textarea id="notifBody" placeholder="e.g. Season 1 of Love in Phnom Penh is now available. Watch free episodes now!" maxlength="200" oninput="updatePreview(); updateCharCount(this, 'bodyCount', 200)"></textarea>
+          <div class="char-count" id="bodyCount">0 / 200</div>
+        </div>
+
+        <!-- Image URL (optional) -->
+        <div class="form-group">
+          <label>Image URL <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+          <input type="text" id="notifImage" placeholder="https://..." oninput="updatePreview()" />
+        </div>
+
+        <!-- Drama ID (optional) -->
+        <div class="form-group" id="dramaIdGroup">
+          <label>Drama ID <span style="color:var(--muted);font-weight:400">(optional — for deep link)</span></label>
+          <input type="text" id="notifDramaId" placeholder="e.g. 1" />
+        </div>
+
+        <!-- Preview -->
+        <div class="form-group">
+          <label>Preview</label>
+          <div class="preview-box">
+            <div class="preview-notif">
+              <div class="preview-icon">🎬</div>
+              <div class="preview-content">
+                <div class="preview-app">TosMer · now</div>
+                <div class="preview-title" id="previewTitle">Notification title</div>
+                <div class="preview-body" id="previewBody">Your message will appear here...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Audience -->
+        <div class="form-group">
+          <label>Audience</label>
+          <div class="audience-toggle">
+            <button class="audience-btn active" id="btnAll" onclick="selectAudience('all')">📡 All Users</button>
+            <button class="audience-btn" id="btnToken" onclick="selectAudience('token')">🎯 Specific Token</button>
+          </div>
+          <div id="tokenInput" style="display:none">
+            <textarea id="notifTokens" placeholder="Paste FCM token(s), one per line" style="min-height:60px;font-family:'DM Mono',monospace;font-size:12px"></textarea>
+          </div>
+        </div>
+
+        <button class="btn-send" id="sendBtn" onclick="sendNotification()">
+          <div class="spinner" id="sendSpinner"></div>
+          <span id="sendBtnText">Send Notification</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Right: History -->
+    <div>
+      <div class="card">
+        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+          <span>History</span>
+          <button onclick="loadHistory()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;font-family:'DM Mono',monospace;">↻ refresh</button>
+        </div>
+        <div class="history-list" id="historyList">
+          <div class="empty-state">No notifications sent yet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  const API_BASE = window.location.origin;
+  let adminPassword = '';
+  let selectedType = 'new_drama';
+  let sendToAll = true;
+
+  // --- Auth ---
+  function login() {
+    const pw = document.getElementById('passwordInput').value;
+    if (!pw) return;
+    adminPassword = pw;
+    // Test auth with a simple request
+    fetch(`${API_BASE}/api/notification-history`, {
+      headers: { 'Authorization': `Bearer ${pw}` }
+    }).then(r => {
+      if (r.ok) {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+        loadHistory();
+      } else {
+        document.getElementById('loginError').style.display = 'block';
+        adminPassword = '';
+      }
+    }).catch(() => {
+      // If API not available yet (local dev), allow with any password for UI testing
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('mainApp').style.display = 'block';
+    });
+  }
+
+  function logout() {
+    adminPassword = '';
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('mainApp').style.display = 'none';
+    document.getElementById('passwordInput').value = '';
+  }
+
+  document.getElementById('passwordInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') login();
+  });
+
+  // --- Type Selection ---
+  function selectType(btn) {
+    document.querySelectorAll('.type-pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    selectedType = btn.dataset.type;
+    // Update preview icon
+    const icons = { new_drama: '🎬', vip: '👑', checkin: '📅', general: '📣' };
+    document.querySelector('.preview-icon').textContent = icons[selectedType] || '📣';
+    // Auto-fill template
+    fillTemplate(selectedType);
+  }
+
+  function fillTemplate(type) {
+    const templates = {
+      new_drama: { title: '🎬 New Drama Available!', body: 'A new drama just dropped on TosMer. Watch it now before everyone else!' },
+      vip: { title: '👑 Your VIP is Expiring Soon', body: 'Your VIP subscription expires in 3 days. Renew now to keep watching unlimited episodes.' },
+      checkin: { title: '📅 Daily Check-in Reminder', body: "Don't forget to check in today and earn your bonus points! Log in now." },
+      general: { title: '', body: '' },
+    };
+    const t = templates[type];
+    if (t.title && !document.getElementById('notifTitle').value) {
+      document.getElementById('notifTitle').value = t.title;
+    }
+    if (t.body && !document.getElementById('notifBody').value) {
+      document.getElementById('notifBody').value = t.body;
+    }
+    updatePreview();
+    updateCharCount(document.getElementById('notifTitle'), 'titleCount', 65);
+    updateCharCount(document.getElementById('notifBody'), 'bodyCount', 200);
+  }
+
+  // --- Audience ---
+  function selectAudience(mode) {
+    sendToAll = mode === 'all';
+    document.getElementById('btnAll').classList.toggle('active', sendToAll);
+    document.getElementById('btnToken').classList.toggle('active', !sendToAll);
+    document.getElementById('tokenInput').style.display = sendToAll ? 'none' : 'block';
+  }
+
+  // --- Preview ---
+  function updatePreview() {
+    const title = document.getElementById('notifTitle').value || 'Notification title';
+    const body = document.getElementById('notifBody').value || 'Your message will appear here...';
+    document.getElementById('previewTitle').textContent = title;
+    document.getElementById('previewBody').textContent = body;
+  }
+
+  function updateCharCount(input, countId, max) {
+    const len = input.value.length;
+    const el = document.getElementById(countId);
+    el.textContent = `${len} / ${max}`;
+    el.className = 'char-count' + (len > max * 0.9 ? (len >= max ? ' over' : ' warn') : '');
+  }
+
+  // --- Send ---
+  async function sendNotification() {
+    const title = document.getElementById('notifTitle').value.trim();
+    const body = document.getElementById('notifBody').value.trim();
+    const imageUrl = document.getElementById('notifImage').value.trim();
+    const dramaId = document.getElementById('notifDramaId').value.trim();
+
+    if (!title || !body) {
+      showToast('Title and message are required', 'error');
+      return;
+    }
+
+    let tokens = [];
+    if (!sendToAll) {
+      const raw = document.getElementById('notifTokens').value.trim();
+      tokens = raw.split('\n').map(t => t.trim()).filter(Boolean);
+      if (!tokens.length) {
+        showToast('Please enter at least one FCM token', 'error');
+        return;
+      }
+    }
+
+    // UI loading state
+    const btn = document.getElementById('sendBtn');
+    const spinner = document.getElementById('sendSpinner');
+    const btnText = document.getElementById('sendBtnText');
+    btn.disabled = true;
+    spinner.style.display = 'block';
+    btnText.textContent = 'Sending...';
+
+    try {
+      const res = await fetch(`${API_BASE}/api/send-notification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminPassword}`,
+        },
+        body: JSON.stringify({
+          title, body,
+          type: selectedType,
+          dramaId: dramaId || undefined,
+          imageUrl: imageUrl || undefined,
+          tokens: sendToAll ? undefined : tokens,
+          sendToAll,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        showToast(`✓ Notification sent${data.successCount > 0 ? ` to ${data.successCount} devices` : ''}`, 'success');
+        // Reset form
+        document.getElementById('notifTitle').value = '';
+        document.getElementById('notifBody').value = '';
+        document.getElementById('notifImage').value = '';
+        document.getElementById('notifDramaId').value = '';
+        updatePreview();
+        // Prepend to history
+        if (data.history) prependHistory(data.history);
+      } else {
+        showToast(`✗ ${data.error}`, 'error');
+      }
+    } catch (e) {
+      showToast(`✗ Network error: ${e.message}`, 'error');
+    } finally {
+      btn.disabled = false;
+      spinner.style.display = 'none';
+      btnText.textContent = 'Send Notification';
+    }
+  }
+
+  // --- History ---
+  async function loadHistory() {
+    try {
+      const res = await fetch(`${API_BASE}/api/notification-history`, {
+        headers: { 'Authorization': `Bearer ${adminPassword}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      renderHistory(data.history || []);
+    } catch (e) { /* silent */ }
+  }
+
+  function renderHistory(items) {
+    const list = document.getElementById('historyList');
+    if (!items.length) {
+      list.innerHTML = '<div class="empty-state">No notifications sent yet</div>';
+      return;
+    }
+    list.innerHTML = items.map(item => `
+      <div class="history-item ${item.success ? 'success-item' : 'error-item'}">
+        <div class="history-item-header">
+          <div class="history-title">${escHtml(item.title)}</div>
+          <div class="history-time">${formatTime(item.sentAt)}</div>
+        </div>
+        <div class="history-body">${escHtml(item.body)}</div>
+        <div class="history-meta">
+          <span class="tag type-${item.type}">${item.type}</span>
+          ${item.sendToAll ? '<span class="tag">all users</span>' : `<span class="tag">${item.recipientCount} devices</span>`}
+          ${item.dramaId ? `<span class="tag">drama #${item.dramaId}</span>` : ''}
+          ${!item.success ? `<span class="tag" style="color:var(--error)">failed</span>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function prependHistory(item) {
+    const list = document.getElementById('historyList');
+    if (list.querySelector('.empty-state')) list.innerHTML = '';
+    const div = document.createElement('div');
+    div.className = `history-item ${item.success ? 'success-item' : 'error-item'}`;
+    div.innerHTML = `
+      <div class="history-item-header">
+        <div class="history-title">${escHtml(item.title)}</div>
+        <div class="history-time">just now</div>
+      </div>
+      <div class="history-body">${escHtml(item.body)}</div>
+      <div class="history-meta">
+        <span class="tag type-${item.type}">${item.type}</span>
+        ${item.sendToAll ? '<span class="tag">all users</span>' : `<span class="tag">${item.recipientCount} devices</span>`}
+        ${item.dramaId ? `<span class="tag">drama #${item.dramaId}</span>` : ''}
+      </div>
+    `;
+    list.insertBefore(div, list.firstChild);
+  }
+
+  // --- Utils ---
+  function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast ${type} show`;
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  function formatTime(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' +
+           d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function escHtml(str) {
+    return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+</script>
+</body>
+</html>
