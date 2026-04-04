@@ -3,6 +3,7 @@ export default async function handler(req, res) {
 
   const SUPABASE_URL = 'https://hzfakfaeoqsknogiwmtp.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6ZmFrZmFlb3Fza25vZ2l3bXRwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MDM3MDgyNiwiZXhwIjoyMDg1OTQ2ODI2fQ.yLne8eg-sjgVpdGoUEQe1v_TqGsuceXeB1XoB1Kstzk';
+  const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
   const update = req.body;
   const message = update?.message;
@@ -11,10 +12,24 @@ export default async function handler(req, res) {
   const text = message?.text || '';
   const from = message?.from || {};
 
-  // Handle /start TOKEN
   if (text.startsWith('/start ')) {
     const token = text.replace('/start ', '').trim();
     if (!token || token.length < 10) return res.status(200).json({ ok: true });
+
+    // Get user profile photo
+    let photoUrl = '';
+    try {
+      const photosRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUserProfilePhotos?user_id=${from.id}&limit=1`);
+      const photosData = await photosRes.json();
+      if (photosData.ok && photosData.result.total_count > 0) {
+        const fileId = photosData.result.photos[0][0].file_id;
+        const fileRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${fileId}`);
+        const fileData = await fileRes.json();
+        if (fileData.ok) {
+          photoUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${fileData.result.file_path}`;
+        }
+      }
+    } catch (e) {}
 
     // Update token in Supabase
     await fetch(`${SUPABASE_URL}/rest/v1/telegram_login_tokens?token=eq.${token}`, {
@@ -29,13 +44,12 @@ export default async function handler(req, res) {
         first_name: from.first_name || '',
         last_name: from.last_name || '',
         username: from.username || '',
-        photo_url: '',
+        photo_url: photoUrl,
         status: 'completed'
       })
     });
 
-    // Send welcome message to user
-    const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    // Send success message
     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
