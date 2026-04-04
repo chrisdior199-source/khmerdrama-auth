@@ -26,24 +26,22 @@
     .emoji { font-size: 52px; margin-bottom: 12px; display: block; }
     h1 { color: #fff; font-size: 24px; font-weight: 700; margin-bottom: 6px; }
     .sub { color: rgba(255,255,255,0.5); font-size: 13px; margin-bottom: 36px; }
-    #widget-wrap { 
-      display: flex; 
-      justify-content: center; 
+    #widget-wrap {
+      display: flex;
+      justify-content: center;
       min-height: 48px;
       margin-bottom: 16px;
       align-items: center;
     }
-    #loading {
-      color: rgba(255,255,255,0.4);
+    #loading { color: rgba(255,255,255,0.4); font-size: 13px; }
+    #msg {
       font-size: 13px;
-    }
-    #msg { 
-      font-size: 13px; 
-      color: rgba(255,255,255,0.4); 
+      color: rgba(255,255,255,0.4);
       min-height: 18px;
       margin-top: 8px;
     }
     .success { color: #4ade80 !important; }
+    .error { color: #f87171 !important; }
   </style>
 </head>
 <body>
@@ -57,9 +55,25 @@
     <div id="msg"></div>
   </div>
   <script>
-    function onTelegramAuth(user) {
+    async function onTelegramAuth(user) {
       document.getElementById('msg').textContent = '✓ Verified! Returning to app...';
       document.getElementById('msg').className = 'success';
+
+      try {
+        // Verify hash server-side
+        const res = await fetch('/api/telegram-auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(user)
+        });
+        const result = await res.json();
+        if (!result.ok) throw new Error(result.error);
+      } catch (e) {
+        document.getElementById('msg').textContent = '⚠️ Verification failed: ' + e.message;
+        document.getElementById('msg').className = 'error';
+        return;
+      }
+
       const p = new URLSearchParams({
         id:         String(user.id),
         first_name: user.first_name  || '',
@@ -69,11 +83,14 @@
         auth_date:  String(user.auth_date),
         hash:       user.hash
       });
+
+      const params = p.toString();
+
       setTimeout(() => {
-        const params = p.toString();
+        // Try Android intent URL first
         const intentUrl = 'intent://auth?' + params + '#Intent;scheme=tosmer;package=com.tosmer.app;end';
         window.location.href = intentUrl;
-        // Fallback: if intent URL fails, try plain deep link after 1.5s
+        // Fallback to plain deep link
         setTimeout(() => {
           window.location.href = 'tosmer://auth?' + params;
         }, 1500);
@@ -90,9 +107,6 @@
       script.setAttribute('data-onauth', 'onTelegramAuth(user)');
       script.setAttribute('data-request-access', 'write');
       script.async = false;
-      script.onload = function() {
-        document.getElementById('loading').textContent = '';
-      };
       script.onerror = function() {
         document.getElementById('loading').textContent = '⚠️ Failed to load. Check connection.';
       };
