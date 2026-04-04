@@ -16,8 +16,8 @@ export default async function handler(req, res) {
     const token = text.replace('/start ', '').trim();
     if (!token || token.length < 10) return res.status(200).json({ ok: true });
 
-    // Get user profile photo
-    let photoUrl = '';
+    // Get and upload profile photo to Supabase Storage
+    let publicPhotoUrl = '';
     try {
       const photosRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUserProfilePhotos?user_id=${from.id}&limit=1`);
       const photosData = await photosRes.json();
@@ -26,10 +26,33 @@ export default async function handler(req, res) {
         const fileRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${fileId}`);
         const fileData = await fileRes.json();
         if (fileData.ok) {
-          photoUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${fileData.result.file_path}`;
+          const tgPhotoUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${fileData.result.file_path}`;
+          
+          // Download photo
+          const photoRes = await fetch(tgPhotoUrl);
+          const photoBuffer = await photoRes.arrayBuffer();
+          
+          // Upload to Supabase Storage
+          const fileName = `telegram_${from.id}.jpg`;
+          const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/avatars/${fileName}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'image/jpeg',
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`,
+              'x-upsert': 'true'
+            },
+            body: photoBuffer
+          });
+          
+          if (uploadRes.ok) {
+            publicPhotoUrl = `${SUPABASE_URL}/storage/v1/object/public/avatars/${fileName}`;
+          }
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('Photo upload error:', e);
+    }
 
     // Update token in Supabase
     await fetch(`${SUPABASE_URL}/rest/v1/telegram_login_tokens?token=eq.${token}`, {
@@ -44,7 +67,7 @@ export default async function handler(req, res) {
         first_name: from.first_name || '',
         last_name: from.last_name || '',
         username: from.username || '',
-        photo_url: photoUrl,
+        photo_url: publicPhotoUrl,
         status: 'completed'
       })
     });
